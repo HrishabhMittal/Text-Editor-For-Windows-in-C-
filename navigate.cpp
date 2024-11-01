@@ -1,6 +1,9 @@
 #include "header.hpp"
 
 string navigate(string path) {
+#ifndef _WIN32
+    path.pop_back();
+#endif
     vector<string> v;
     if (filesystem::exists(path) ) {
         if (filesystem::is_directory(path) || path=="C:/") {
@@ -31,12 +34,20 @@ string navigate(string path) {
                 x.pop_back();
                 cout << x;
                 cout << "\033[0m";
+#ifdef _WIN32
                 char c=getch();
                 while (c<=0) c=getch();
-                if (c==72 && selected>0) selected--;
-                else if (c==80 && selected<p.size()) selected++;
-                else if (c==' ' || c==13) break;
-                else if (c==3) return "";
+#else
+                char c=getch();
+                if (c==27) {
+                    getch();
+                    c=getch();
+                }
+#endif
+                if (c==ARROW_UP && selected>0) selected--;
+                else if (c==ARROW_DOWN && selected<p.size()) selected++;
+                else if (c==' ' || c==ENTER) break;
+                else if (c==EXIT) return "";
             } while(true);
             string x=p[selected];
             vector<string> np=split(path,'/');

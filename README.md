@@ -1,7 +1,12 @@
 # Overview
-This is a text Editor written in C++ using some functions in windows.h and conio.h.
+This is a cross-platform Text Editor written in C++.
 
 # Build
 ```bash
 make
 ```
+or 
+```bash
+g++ main.c -o main
+```
+

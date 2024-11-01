@@ -14,14 +14,19 @@ void writeFile(string filename) {
 bool handleKeys(string &f) {
     windowSize=getConsoleSize();
     char x=_getch();
-    if (x==3) {
+    if (x==EXIT) {
         return false;
-    } else if (x==19) { 
+    } else if (x==SAVE) { 
         writeFile(f);
-    } else if (x<=0) {
+#ifdef _WIN32
+    } else if (x<=0 || x==27) {
         while (x<=0) x=_getch();
+#else
+    } else if (x==27) {
+        x=_getch();x=_getch();
+#endif
         switch (x) {
-            case 72: if (curpos[0]!=0) {
+            case ARROW_UP: if (curpos[0]!=0) {
                 curpos[0]--; 
                 int min=savePos>dat[curpos[0]].size()?dat[curpos[0]].size():savePos;
                 if (curpos[1]>min) {
@@ -30,14 +35,14 @@ bool handleKeys(string &f) {
                     curpos[1]=min;
                 }
             } break;
-            case 75:
+            case ARROW_LEFT:
                 if (curpos[1]!=0) {
                     curpos[1]--;
                 } else if (curpos[0]!=0) {
                     curpos[0]--;
                     curpos[1]=dat[curpos[0]].size();
                 } savePos=curpos[1];break;
-            case 80: if (curpos[0]+1<dat.size()) {
+            case ARROW_DOWN: if (curpos[0]+1<dat.size()) {
                 curpos[0]++;
                 int min=savePos>dat[curpos[0]].size()?dat[curpos[0]].size():savePos;
                 if (curpos[1]>min) {
@@ -46,7 +51,7 @@ bool handleKeys(string &f) {
                     curpos[1]=min;
                 }
             } break;
-            case 77:
+            case ARROW_RIGHT:
                 if (curpos[1]<dat[curpos[0]].size()) {
                     curpos[1]++;
                 }
@@ -61,7 +66,7 @@ bool handleKeys(string &f) {
         else if (curpos[1]<offset[1]) offset[1]=curpos[1];
         print(dat);
         moveto(curpos[0]-offset[0],curpos[1]-offset[1]);
-    } else if (x==13) {
+    } else if (x==ENTER) {
         vector<vector<char>> x={slice(dat[curpos[0]],0,curpos[1]),slice(dat[curpos[0]],curpos[1])};
         splice(dat,curpos[0],1,x);
         curpos[0]++;
@@ -71,7 +76,7 @@ bool handleKeys(string &f) {
         print(dat);
         moveto(curpos[0]-offset[0],curpos[1]-offset[1]);
         savePos=curpos[1];
-    } else if (x==8) {
+    } else if (x==BACK) {
         if (curpos[1]!=0) {
             splice(dat[curpos[0]],curpos[1]-1,1);
             curpos[1]--;
@@ -109,10 +114,16 @@ bool handleKeys(string &f) {
 }
 void loadFile(string filename) {
     dat={{}};
-    string s;
     ifstream file(filename);
-    getline(file,s,'\0');
-    for (char i:s) {
+    vector<char> buf;
+    file.seekg(0,file.end);
+    size_t len = file.tellg();
+    file.seekg(0,file.beg);
+    if (len!=0) {
+        buf.resize(len);
+        file.read(&buf[0],len);
+    }
+    for (char i:buf) {
         if (i=='\n') {
             dat.push_back({});
         } else dat.back().push_back(i);

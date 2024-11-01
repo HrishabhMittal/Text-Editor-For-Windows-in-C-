@@ -2,10 +2,8 @@
 #include <iostream>
 #include <string>
 #include <vector>
-#include <fstream>
-#include <conio.h>
-#include <windows.h>
 #include <filesystem>
+#include <fstream>
 using namespace std;
 void clearScreen() {
     cout << "\x1B[2J\x1B[H";
@@ -14,6 +12,13 @@ vector<vector<char>> dat{{}};
 vector<int> curpos{0,0};
 int savePos=curpos[1];
 vector<int> offset{0,0};
+#ifdef _WIN32
+#include <conio.h>
+#include <windows.h>
+#define BACK 8
+#define ENTER 13
+#define EXIT 3 
+#define SAVE 19
 int enableEscapeSquences() {
     HANDLE hOut = GetStdHandle(STD_OUTPUT_HANDLE);
     if (hOut == INVALID_HANDLE_VALUE)
@@ -43,6 +48,52 @@ vector<int> getConsoleSize() {
     rows = csbi.srWindow.Bottom - csbi.srWindow.Top + 1;
     return {rows-3,columns-3};
 }
+#define ARROW_UP 72
+#define ARROW_DOWN 80
+#define ARROW_LEFT 75
+#define ARROW_RIGHT 77
+#else 
+#define ARROW_UP 65
+#define ARROW_DOWN 66
+#define ARROW_LEFT 68
+#define ARROW_RIGHT 67
+#include <sys/ioctl.h>
+#include <unistd.h>
+#define ENTER 10
+#define BACK 127
+#define SAVE 23
+#define EXIT 5
+int enableEscapeSquences() {return 0;}
+vector<int> getConsoleSize() {
+    struct winsize w;
+    if (ioctl(STDOUT_FILENO, TIOCGWINSZ, &w) == -1) {
+        perror("ioctl");
+    }
+    return {w.ws_row-3,w.ws_col-3};
+}
+#include <termios.h>
+#include <stdio.h>
+static struct termios old, current;
+void initTermios(int echo) {
+  tcgetattr(0, &old); 
+  current = old; 
+  current.c_lflag &= ~ICANON; 
+  if (echo) current.c_lflag |= ECHO; 
+  else current.c_lflag &= ~ECHO; 
+  tcsetattr(0, TCSANOW, &current); 
+}
+void resetTermios(void) {
+  tcsetattr(0, TCSANOW, &old);
+}
+char _getch() {
+  char ch;
+  initTermios(0);
+  ch = getchar();
+  resetTermios();
+  return ch;
+}
+#define getch _getch
+#endif
 vector<int> windowSize=getConsoleSize();
 void print(vector<vector<char>> x) {
     cout << "\033[?12l";
